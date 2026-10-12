@@ -15,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileSystemHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LRHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -29,6 +32,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FileSystemHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="LRHookFunc.h">
       <Filter>Header Files</Filter>
     </ClInclude>

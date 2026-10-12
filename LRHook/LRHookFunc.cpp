@@ -5,6 +5,7 @@
 #include"LRHookFunc.h"
 #include"User32Hook.h"
 #include"KernelbaseHook.h"
+#include"FileSystemHook.h"
 
 ORIGINAL Original = { NULL };
 
@@ -142,8 +143,8 @@ void AttachFunctions()
 	DetourAttach(&(PVOID&)OriginalGetUserDefaultLCID, HookGetUserDefaultLCID);
 	DetourAttach(&(PVOID&)OriginalGetSystemDefaultLangID, HookGetSystemDefaultLangID);
 	DetourAttach(&(PVOID&)OriginalGetUserDefaultLangID, HookGetUserDefaultLangID);
-	DetourAttach(&(PVOID&)OriginalMultiByteToWideChar, HookMultiByteToWideChar);
-	DetourAttach(&(PVOID&)OriginalWideCharToMultiByte, HookWideCharToMultiByte);
+	AttachKernelFunction(OriginalMultiByteToWideChar, Kernel32MultiByteToWideChar, HookMultiByteToWideChar);
+	AttachKernelFunction(OriginalWideCharToMultiByte, Kernel32WideCharToMultiByte, HookWideCharToMultiByte);
 
 	DetourAttach(&(PVOID&)OriginalCreateWindowExA, HookCreateWindowExA);
 	//DetourAttach(&(PVOID&)OriginalDefWindowProcA, HookDefWindowProcA);
@@ -187,8 +188,9 @@ void AttachFunctions()
 	DetourAttach(&(PVOID&)OriginalCreateDialogIndirectParamA, HookCreateDialogIndirectParamA);
 
 	DetourAttach(&(PVOID&)OriginalGetTimeZoneInformation, HookGetTimeZoneInformation);
-	DetourAttach(&(PVOID&)OriginalCreateDirectoryA, HookCreateDirectoryA);
-	DetourAttach(&(PVOID&)OriginalCreateFileA, HookCreateFileA);
+	AttachKernelFunction(OriginalCreateDirectoryA, Kernel32CreateDirectoryA, HookCreateDirectoryA);
+	AttachKernelFunction(OriginalCreateFileA, Kernel32CreateFileA, HookCreateFileA);
+	AttachFileSystemFunctions();
 	
 	DetourAttach(&(PVOID&)OriginalGetLocaleInfoA, HookGetLocaleInfoA);
 	DetourAttach(&(PVOID&)OriginalGetLocaleInfoW, HookGetLocaleInfoW);
@@ -231,8 +233,8 @@ void DetachFunctions()
 	DetourDetach(&(PVOID&)OriginalGetUserDefaultLCID, HookGetUserDefaultLCID);
 	DetourDetach(&(PVOID&)OriginalGetSystemDefaultLangID, HookGetSystemDefaultLangID);
 	DetourDetach(&(PVOID&)OriginalGetUserDefaultLangID, HookGetUserDefaultLangID);
-	DetourDetach(&(PVOID&)OriginalMultiByteToWideChar, HookMultiByteToWideChar);
-	DetourDetach(&(PVOID&)OriginalWideCharToMultiByte, HookWideCharToMultiByte);
+	DetachKernelFunction(OriginalMultiByteToWideChar, Kernel32MultiByteToWideChar, HookMultiByteToWideChar);
+	DetachKernelFunction(OriginalWideCharToMultiByte, Kernel32WideCharToMultiByte, HookWideCharToMultiByte);
 
 	DetourDetach(&(PVOID&)OriginalCreateWindowExA, HookCreateWindowExA);
 	DetourDetach(&(PVOID&)OriginalDefWindowProcA, HookDefWindowProcA);
@@ -268,8 +270,9 @@ void DetachFunctions()
 	DetourDetach(&(PVOID&)OriginalCreateDialogIndirectParamA, HookCreateDialogIndirectParamA);
 
 	DetourDetach(&(PVOID&)OriginalGetTimeZoneInformation, HookGetTimeZoneInformation);
-	DetourDetach(&(PVOID&)OriginalCreateDirectoryA, HookCreateDirectoryA);
-	DetourDetach(&(PVOID&)OriginalCreateFileA, HookCreateFileA);
+	DetachKernelFunction(OriginalCreateDirectoryA, Kernel32CreateDirectoryA, HookCreateDirectoryA);
+	DetachKernelFunction(OriginalCreateFileA, Kernel32CreateFileA, HookCreateFileA);
+	DetachFileSystemFunctions();
 
 	DetourDetach(&(PVOID&)OriginalGetLocaleInfoA, HookGetLocaleInfoA);
 	DetourDetach(&(PVOID&)OriginalGetLocaleInfoW, HookGetLocaleInfoW);
@@ -1144,12 +1147,14 @@ BOOL WINAPI HookCreateDirectoryA(
 	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
 )
 {
-	LPWSTR lpPathNameW = MultiByteToWideCharInternal(lpPathName,Original.CodePage);
+	LPWSTR lpPathNameW = MultiByteToWideCharInternal(lpPathName, settings.CodePage);
 	BOOL ret = CreateDirectoryW(lpPathNameW, lpSecurityAttributes);
+	DWORD error = GetLastError();
 	if (lpPathNameW)
 	{
 		FreeStringInternal(lpPathNameW);
 	}
+	SetLastError(error);
 	return ret;
 }
 
@@ -1163,7 +1168,7 @@ HANDLE WINAPI HookCreateFileA(
 	_In_opt_ HANDLE hTemplateFile
 )
 {
-	LPWSTR lpFileNameW = MultiByteToWideCharInternal(lpFileName,Original.CodePage);
+	LPWSTR lpFileNameW = MultiByteToWideCharInternal(lpFileName, settings.CodePage);
 	HANDLE ret = CreateFileW(
 		lpFileNameW,
 		dwDesiredAccess,
@@ -1173,10 +1178,12 @@ HANDLE WINAPI HookCreateFileA(
 		dwFlagsAndAttributes,
 		hTemplateFile
 	);
+	DWORD error = GetLastError();
 	if (lpFileNameW)
 	{
 		FreeStringInternal(lpFileNameW);
 	}
+	SetLastError(error);
 	return ret;
 }
 

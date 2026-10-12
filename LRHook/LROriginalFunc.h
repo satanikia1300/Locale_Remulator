@@ -1,6 +1,10 @@
 #pragma once
 #include"LRFunc.h"
+#include"KernelbaseHook.h"
 
+// Kernel32 and API-set callers can enter through different wrappers. Hook the
+// KernelBase implementation so CRT callers are covered and Original* remains
+// a true bypass for conversions that intentionally use the host code page.
 static int (WINAPI* OriginalMultiByteToWideChar)(
 	UINT CodePage, 
 	DWORD dwFlags,
@@ -8,7 +12,8 @@ static int (WINAPI* OriginalMultiByteToWideChar)(
 	int cbMultiByte, 
 	LPWSTR lpWideCharStr, 
 	int cchWideChar
-	) = MultiByteToWideChar;
+	) = ResolveKernelBaseFunction("MultiByteToWideChar", MultiByteToWideChar);
+static auto Kernel32MultiByteToWideChar = ResolveAdditionalKernel32Function("MultiByteToWideChar", OriginalMultiByteToWideChar);
 
 static int (WINAPI* OriginalWideCharToMultiByte)(
 	UINT CodePage,
@@ -19,7 +24,8 @@ static int (WINAPI* OriginalWideCharToMultiByte)(
 	int cbMultiByte,
 	LPCSTR lpDefaultChar,
 	LPBOOL lpUsedDefaultChar
-	) = WideCharToMultiByte;
+	) = ResolveKernelBaseFunction("WideCharToMultiByte", WideCharToMultiByte);
+static auto Kernel32WideCharToMultiByte = ResolveAdditionalKernel32Function("WideCharToMultiByte", OriginalWideCharToMultiByte);
 
 static UINT(WINAPI* OriginalGetACP)(void) = GetACP;
 static UINT(WINAPI* OriginalGetOEMCP)(void) = GetOEMCP;
@@ -284,7 +290,8 @@ static DWORD(WINAPI* OriginalGetTimeZoneInformation)(
 static BOOL(WINAPI* OriginalCreateDirectoryA)(
 	_In_ LPCSTR lpPathName,
 	_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
-) = CreateDirectoryA;
+) = ResolveKernelBaseFunction("CreateDirectoryA", CreateDirectoryA);
+static auto Kernel32CreateDirectoryA = ResolveAdditionalKernel32Function("CreateDirectoryA", OriginalCreateDirectoryA);
 
 static HANDLE(WINAPI* OriginalCreateFileA)(
 	_In_ LPCSTR lpFileName,
@@ -294,7 +301,8 @@ static HANDLE(WINAPI* OriginalCreateFileA)(
 	_In_ DWORD dwCreationDisposition,
 	_In_ DWORD dwFlagsAndAttributes,
 	_In_opt_ HANDLE hTemplateFile
-	) = CreateFileA;
+) = ResolveKernelBaseFunction("CreateFileA", CreateFileA);
+static auto Kernel32CreateFileA = ResolveAdditionalKernel32Function("CreateFileA", OriginalCreateFileA);
 
 static int(WINAPI* OriginalGetLocaleInfoA)(
 	_In_ LCID Locale,
