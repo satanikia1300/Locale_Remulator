@@ -40,6 +40,18 @@ Select a `*.exe` application and right click, there will show a section named "L
 
 Run `LREditor.exe` and click `Shortcut` button, choose what config and application you want to run, there will generate a lnk file in the same path. You could use this lnk file to use LR conveniently without right click menu.
 
+### ANSI menu text
+
+Menu text is converted using the selected profile's code page through Unicode
+menu APIs. This covers `GetMenuStringA`, `GetMenuItemInfoA`, `SetMenuItemInfoA`,
+`InsertMenuItemA`, `AppendMenuA`, `InsertMenuA`, `ModifyMenuA`, `LoadMenuA`, and
+`LoadStringA`. Byte counts, length queries, and short output buffers are handled
+without splitting multibyte characters. Owner-draw values, bitmap handles,
+separators, item metadata, and numeric resource IDs retain their original meaning.
+
+Restart the target application after replacing `LRHookx64.dll` / `LRHookx32.dll`
+to load the updated hooks.
+
 ## Built With
 
 * [Detours](https://github.com/microsoft/Detours) - Used to hook ANSI/Unicode functions

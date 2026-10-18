@@ -6,6 +6,7 @@
 #include"User32Hook.h"
 #include"KernelbaseHook.h"
 #include"FileSystemHook.h"
+#include"MenuHook.h"
 
 ORIGINAL Original = { NULL };
 
@@ -191,6 +192,7 @@ void AttachFunctions()
 	AttachKernelFunction(OriginalCreateDirectoryA, Kernel32CreateDirectoryA, HookCreateDirectoryA);
 	AttachKernelFunction(OriginalCreateFileA, Kernel32CreateFileA, HookCreateFileA);
 	AttachFileSystemFunctions();
+	AttachMenuFunctions();
 	
 	DetourAttach(&(PVOID&)OriginalGetLocaleInfoA, HookGetLocaleInfoA);
 	DetourAttach(&(PVOID&)OriginalGetLocaleInfoW, HookGetLocaleInfoW);
@@ -273,6 +275,7 @@ void DetachFunctions()
 	DetachKernelFunction(OriginalCreateDirectoryA, Kernel32CreateDirectoryA, HookCreateDirectoryA);
 	DetachKernelFunction(OriginalCreateFileA, Kernel32CreateFileA, HookCreateFileA);
 	DetachFileSystemFunctions();
+	DetachMenuFunctions();
 
 	DetourDetach(&(PVOID&)OriginalGetLocaleInfoA, HookGetLocaleInfoA);
 	DetourDetach(&(PVOID&)OriginalGetLocaleInfoW, HookGetLocaleInfoW);
