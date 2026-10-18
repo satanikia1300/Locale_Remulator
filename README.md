@@ -62,6 +62,11 @@ font's size and style. The original DC font is restored after each call. Outline
 fonts, ASCII-only runs, glyph-index output, and empty background fills retain
 their normal behavior. Fallback fonts are cached for the process lifetime.
 
+Standard text controls also receive a compatible font when created or when
+`WM_SETFONT` selects a mismatched raster/default font. This lets native controls
+measure, wrap, and position text with the same font they use for drawing. An
+application-supplied outline font is preserved.
+
 ## Built With
 
 * [Detours](https://github.com/microsoft/Detours) - Used to hook ANSI/Unicode functions

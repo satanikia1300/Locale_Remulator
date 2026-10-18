@@ -409,6 +409,8 @@ LRESULT WINAPI HookSendMessageA(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 {
 	switch (uMsg)
 	{
+	case WM_SETFONT:
+		return OriginalSendMessageA(hWnd, uMsg, WindowTextFont(hWnd, wParam), lParam);
 	case WM_CREATE:
 	case WM_NCCREATE:
 	{

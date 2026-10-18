@@ -18,10 +18,24 @@ namespace
     auto OriginalGetTextExtentPoint32A = GetTextExtentPoint32A;
     auto OriginalGetTextExtentExPointW = GetTextExtentExPointW;
     auto OriginalGetTextExtentExPointA = GetTextExtentExPointA;
+    auto OriginalCreateWindowExW = CreateWindowExW;
+    auto OriginalSendMessageW = SendMessageW;
 
     struct FontEntry { LOGFONTW source; HFONT replacement; };
     SRWLOCK fontLock = SRWLOCK_INIT;
     FontEntry fonts[16]{};
+    bool IsTextControl(HWND window)
+    {
+        WCHAR name[64]{};
+        if (!GetClassNameW(window, name, _countof(name))) return false;
+        // These controls can lay out text inside user32/comctl32 before reaching
+        // an exported drawing API. Give the control a consistent font first.
+        for (LPCWSTR known : {L"Static", L"Button", L"Edit", L"ComboBox", L"ListBox",
+            L"ToolbarWindow32", L"msctls_statusbar32", L"tooltips_class32",
+            L"SysListView32", L"SysTreeView32", L"SysTabControl32", L"ReBarWindow32"})
+            if (!lstrcmpiW(name, known)) return true;
+        return false;
+    }
     // A small process-lifetime cache: cached fonts must remain valid across
     // concurrent paint calls. GDI releases these objects when the process exits.
     HFONT FallbackFont(HDC dc)
@@ -225,6 +239,64 @@ namespace
         return OriginalGetTextExtentExPointA(dc, text, count, maximum, fit, dx, size);
     }
 
+    HWND WINAPI HookCreateWindowExW(DWORD exStyle, LPCWSTR className, LPCWSTR title, DWORD style,
+        int x, int y, int width, int height, HWND parent, HMENU menu, HINSTANCE instance, LPVOID parameter)
+    {
+        HWND window = OriginalCreateWindowExW(exStyle, className, title, style,
+            x, y, width, height, parent, menu, instance, parameter);
+        InitializeWindowTextFont(window);
+        return window;
+    }
+
+    LRESULT WINAPI HookSendMessageW(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+    {
+        if (message == WM_SETFONT) wParam = WindowTextFont(window, wParam);
+        return OriginalSendMessageW(window, message, wParam, lParam);
+    }
+}
+
+WPARAM WindowTextFont(HWND window, WPARAM requested)
+{
+    DWORD error = GetLastError();
+    HFONT result = reinterpret_cast<HFONT>(requested);
+    if (IsTextControl(window))
+    {
+        HDC dc = CreateCompatibleDC(nullptr);
+        if (dc)
+        {
+            // NULL WM_SETFONT selects the default System font in classic
+            // controls. Resolve that default before their internal layout.
+            HFONT source = result ? result : static_cast<HFONT>(GetStockObject(SYSTEM_FONT));
+            HGDIOBJ previous = SelectObject(dc, source);
+            if (previous && previous != HGDI_ERROR)
+            {
+                if (HFONT replacement = FallbackFont(dc)) result = replacement;
+                SelectObject(dc, previous);
+            }
+            DeleteDC(dc);
+        }
+    }
+    SetLastError(error);
+    return reinterpret_cast<WPARAM>(result);
+}
+
+void InitializeWindowTextFont(HWND window)
+{
+    if (!window) return;
+    DWORD error = GetLastError();
+    if (IsTextControl(window))
+    {
+        WPARAM current = static_cast<WPARAM>(SendMessageW(window, WM_GETFONT, 0, 0));
+        WPARAM replacement = WindowTextFont(window, current);
+        if (replacement != current)
+        {
+            SendMessageW(window, WM_SETFONT, replacement, FALSE);
+            // Repaint on the next message-loop iteration, after the caller has
+            // finished constructing its window/control state.
+            InvalidateRect(window, nullptr, TRUE);
+        }
+    }
+    SetLastError(error);
 }
 
 void AttachTextFunctions()
@@ -240,10 +312,14 @@ void AttachTextFunctions()
     DetourAttach(&(PVOID&)OriginalGetTextExtentPoint32A, HookGetTextExtentPoint32A);
     DetourAttach(&(PVOID&)OriginalGetTextExtentExPointW, HookGetTextExtentExPointW);
     DetourAttach(&(PVOID&)OriginalGetTextExtentExPointA, HookGetTextExtentExPointA);
+    DetourAttach(&(PVOID&)OriginalCreateWindowExW, HookCreateWindowExW);
+    DetourAttach(&(PVOID&)OriginalSendMessageW, HookSendMessageW);
 }
 
 void DetachTextFunctions()
 {
+    DetourDetach(&(PVOID&)OriginalSendMessageW, HookSendMessageW);
+    DetourDetach(&(PVOID&)OriginalCreateWindowExW, HookCreateWindowExW);
     DetourDetach(&(PVOID&)OriginalGetTextExtentExPointA, HookGetTextExtentExPointA);
     DetourDetach(&(PVOID&)OriginalGetTextExtentExPointW, HookGetTextExtentExPointW);
     DetourDetach(&(PVOID&)OriginalGetTextExtentPoint32A, HookGetTextExtentPoint32A);
