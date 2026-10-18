@@ -67,13 +67,34 @@ namespace
         {
             LOGFONTW replacement = source;
             replacement.lfCharSet = settings.CodePage == CP_UTF8 ? DEFAULT_CHARSET : static_cast<BYTE>(charset.ciCharset);
-            replacement.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-            LPCWSTR face = settings.CodePage == 949 ? L"Malgun Gothic" :
-                settings.CodePage == 932 ? L"Yu Gothic UI" :
-                settings.CodePage == 936 ? L"Microsoft YaHei UI" :
-                settings.CodePage == 950 ? L"Microsoft JhengHei UI" : L"Segoe UI";
-            lstrcpynW(replacement.lfFaceName, face, LF_FACESIZE);
+            // Preserve the original font request and let the font mapper
+            // resolve a compatible face for the profile's character set.
             result = CreateFontIndirectW(&replacement);
+            bool outline = false;
+            if (result)
+            {
+                HGDIOBJ previous = SelectObject(dc, result);
+                TEXTMETRICW selected{};
+                if (previous && previous != HGDI_ERROR)
+                {
+                    outline = GetTextMetricsW(dc, &selected) &&
+                        (selected.tmPitchAndFamily & (TMPF_TRUETYPE | TMPF_VECTOR));
+                    SelectObject(dc, previous);
+                }
+            }
+            // Some profiles (notably UTF-8) have no corresponding raster-font
+            // mapping. Use an explicit outline family only as a last resort.
+            if (!outline)
+            {
+                if (result) DeleteObject(result);
+                replacement.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+                LPCWSTR face = settings.CodePage == 949 ? L"Malgun Gothic" :
+                    settings.CodePage == 932 ? L"Yu Gothic UI" :
+                    settings.CodePage == 936 ? L"Microsoft YaHei UI" :
+                    settings.CodePage == 950 ? L"Microsoft JhengHei UI" : L"Segoe UI";
+                lstrcpynW(replacement.lfFaceName, face, LF_FACESIZE);
+                result = CreateFontIndirectW(&replacement);
+            }
             if (result) { empty->source = source; empty->replacement = result; }
         }
         ReleaseSRWLockExclusive(&fontLock);
