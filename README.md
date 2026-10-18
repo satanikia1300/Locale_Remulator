@@ -52,6 +52,16 @@ separators, item metadata, and numeric resource IDs retain their original meanin
 Restart the target application after replacing `LRHookx64.dll` / `LRHookx32.dll`
 to load the updated hooks.
 
+### Raster-font fallback
+
+Legacy raster fonts such as `System`, `Fixedsys`, and `Terminal` can lack the
+selected profile's characters even after the text has been decoded correctly.
+When their character set differs from the profile, non-ASCII drawing and text
+measurement temporarily select a compatible outline font, keeping the original
+font's size and style. The original DC font is restored after each call. Outline
+fonts, ASCII-only runs, glyph-index output, and empty background fills retain
+their normal behavior. Fallback fonts are cached for the process lifetime.
+
 ## Built With
 
 * [Detours](https://github.com/microsoft/Detours) - Used to hook ANSI/Unicode functions

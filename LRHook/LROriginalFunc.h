@@ -195,23 +195,6 @@ static HFONT(WINAPI* OriginalCreateFontIndirectExW)(
 	_In_ CONST ENUMLOGFONTEXDVW*
 	) = CreateFontIndirectExW;
 
-static BOOL(WINAPI* OriginalTextOutA)(
-	HDC    hdc,
-	int    x,
-	int    y,
-	LPCSTR lpString,
-	int    c
-	) = TextOutA;
-
-static int(WINAPI* OriginalDrawTextExA)(
-	_In_ HDC hdc,
-	LPSTR lpchText,
-	_In_ int cchText,
-	_Inout_ LPRECT lprc,
-	_In_ UINT format,
-	_In_opt_ LPDRAWTEXTPARAMS lpdtp
-	) = DrawTextExA;
-
 static HANDLE(WINAPI* OriginalGetClipboardData)(
 	_In_ UINT uFormat
 	) = GetClipboardData;

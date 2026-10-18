@@ -21,6 +21,9 @@
     <ClCompile Include="MenuHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TextHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="LRHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MenuHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LRHookFunc.h">

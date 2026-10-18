@@ -241,23 +241,6 @@ HFONT WINAPI HookCreateFontIndirectExW(
 	ENUMLOGFONTEXDVW*
 );
 
-BOOL WINAPI HookTextOutA(
-	HDC    hdc,
-	int    x,
-	int    y,
-	LPSTR lpString,
-	int    c
-);
-
-int WINAPI HookDrawTextExA(
-	_In_ HDC hdc,
-	LPSTR lpchText,
-	_In_ int cchText,
-	_Inout_ LPRECT lprc,
-	_In_ UINT format,
-	_In_opt_ LPDRAWTEXTPARAMS lpdtp
-);
-
 HANDLE WINAPI HookGetClipboardData(
 	UINT uFormat
 );

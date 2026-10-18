@@ -7,6 +7,7 @@
 #include"KernelbaseHook.h"
 #include"FileSystemHook.h"
 #include"MenuHook.h"
+#include"TextHook.h"
 
 ORIGINAL Original = { NULL };
 
@@ -180,8 +181,7 @@ void AttachFunctions()
 	DetourAttach(&(PVOID&)OriginalCreateFontIndirectW, HookCreateFontIndirectW);
 	DetourAttach(&(PVOID&)OriginalCreateFontIndirectExA, HookCreateFontIndirectExA);
 	DetourAttach(&(PVOID&)OriginalCreateFontIndirectExW, HookCreateFontIndirectExW);
-	//DetourAttach(&(PVOID&)OriginalTextOutA, HookTextOutA);
-	DetourAttach(&(PVOID&)OriginalDrawTextExA, HookDrawTextExA);
+	AttachTextFunctions();
 	DetourAttach(&(PVOID&)OriginalGetClipboardData, HookGetClipboardData);
 	DetourAttach(&(PVOID&)OriginalSetClipboardData, HookSetClipboardData);
 
@@ -263,8 +263,7 @@ void DetachFunctions()
 	DetourDetach(&(PVOID&)OriginalCreateFontIndirectW, HookCreateFontIndirectW);
 	DetourDetach(&(PVOID&)OriginalCreateFontIndirectExA, HookCreateFontIndirectExA);
 	DetourDetach(&(PVOID&)OriginalCreateFontIndirectExW, HookCreateFontIndirectExW);
-	DetourDetach(&(PVOID&)OriginalTextOutA, HookTextOutA);
-	DetourDetach(&(PVOID&)OriginalDrawTextExA, HookDrawTextExA);
+	DetachTextFunctions();
 	DetourDetach(&(PVOID&)OriginalGetClipboardData, HookGetClipboardData);
 	DetourDetach(&(PVOID&)OriginalSetClipboardData, HookSetClipboardData);
 
@@ -894,51 +893,6 @@ HFONT WINAPI HookCreateFontIndirectExW(
 {
 	//lplf->elfEnumLogfontEx.elfLogFont.lfCharSet = HANGUL_CHARSET;
 	return OriginalCreateFontIndirectExW(lplf);
-}
-
-BOOL WINAPI HookTextOutA(
-	HDC    hdc,
-	int    x,
-	int    y,
-	LPSTR lpString,
-	int    c
-)
-{
-	LPWSTR wstr = MultiByteToWideCharInternal(lpString);
-	if (wstr)
-	{
-		bool ret = TextOutW(hdc, x, y, wstr, 1);
-		FreeStringInternal(wstr);
-		return ret;
-	}
-	return OriginalTextOutA(hdc, x, y, lpString, c);
-}
-
-int WINAPI HookDrawTextExA(
-	_In_ HDC hdc,
-	LPSTR lpchText,
-	_In_ int cchText,
-	_Inout_ LPRECT lprc,
-	_In_ UINT format,
-	_In_opt_ LPDRAWTEXTPARAMS lpdtp
-)
-{
-	LPWSTR wstr = MultiByteToWideCharInternal(lpchText);
-	if (wstr)
-	{
-		int wsize = lstrlenW(wstr);
-		int ret = DrawTextExW(hdc, wstr, wsize, lprc, format, lpdtp);
-		FreeStringInternal(wstr);
-		return ret;
-	}
-	return OriginalDrawTextExA(
-		hdc,
-		lpchText,
-		cchText,
-		lprc,
-		format,
-		lpdtp
-	);
 }
 
 HANDLE WINAPI HookGetClipboardData(

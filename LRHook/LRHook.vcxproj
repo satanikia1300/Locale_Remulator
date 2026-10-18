@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="FileSystemHook.cpp" />
     <ClCompile Include="MenuHook.cpp" />
+    <ClCompile Include="TextHook.cpp" />
     <ClCompile Include="LRHook.cpp" />
     <ClCompile Include="LRHookFunc.cpp" />
     <ClCompile Include="User32Hook.cpp" />
@@ -184,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="FileSystemHook.h" />
     <ClInclude Include="MenuHook.h" />
+    <ClInclude Include="TextHook.h" />
     <ClInclude Include="KernelbaseHook.h" />
     <ClInclude Include="LRFunc.h" />
     <ClInclude Include="LRHookFunc.h" />
